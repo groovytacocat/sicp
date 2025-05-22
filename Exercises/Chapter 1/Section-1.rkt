@@ -98,6 +98,7 @@ Then he evaluates (test 0 (p))
 What behavior will Ben observe with an interpreter that uses applicative-order evaluation?
 What behavior will he observe with an interpreter that uses normal-order evaluation?
 Explain your answer.
+
 Assume that the evaluation rule for the special form if is the same: Predicate expression is evaluated first and result determines whether to evaluate consequent or alternate expression
 |#
 
