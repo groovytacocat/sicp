@@ -40,6 +40,12 @@
 (define tolerance 0.00001)
 (define (average-damp f)
   (lambda (x) (average x (f x))))
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
+(define (center i)
+  (/ (+ (lower-bound i) (upper-bound i)) 2))
+(define (width i)
+  (/ (- (upper-bound i) (lower-bound i)) 2))
 
 #|
 Exercise 2.1
@@ -247,18 +253,18 @@ Define selectors upper-bound and lower-bound to complete the implementation
   (make-interval (+ (lower-bound x) (lower-bound y))
                  (+ (upper-bound x) (upper-bound y))))
 
-(define (mul-interval x y)
-  (let ((p1 (* (lower-bound x) (lower-bound y)))
-        (p2 (* (lower-bound x) (upper-bound y)))
-        (p3 (* (upper-bound x) (lower-bound y)))
-        (p4 (* (upper-bound x) (upper-bound y))))
-    (make-interval (min p1 p2 p3 p4)
-                   (max p1 p2 p3 p4))))
+; (define (mul-interval x y)
+;   (let ((p1 (* (lower-bound x) (lower-bound y)))
+;         (p2 (* (lower-bound x) (upper-bound y)))
+;         (p3 (* (upper-bound x) (lower-bound y)))
+;         (p4 (* (upper-bound x) (upper-bound y))))
+;     (make-interval (min p1 p2 p3 p4)
+;                    (max p1 p2 p3 p4))))
 
-(define (div-interval x y)
-  (mul-interval x
-                (make-interval (/ 1.0 (upper-bound y))
-                               (/ 1.0 (lower-bound y)))))
+; (define (div-interval x y)
+;   (mul-interval x
+;                 (make-interval (/ 1.0 (upper-bound y))
+;                                (/ 1.0 (lower-bound y)))))
 
 (define (make-interval a b) (cons a b))
 
@@ -297,8 +303,8 @@ I1 + I2 = [8, 24] -> 24 - 8 = 16 -> 16 / 2 -> 8
 
 [x1, y1]
 [x2, y2]
-   
-   
+
+
    (y1 - x1)     (y2 - x2)       y1 - x1 + y2 - x2           (y1 + y2) - (x1 + x2)
   ----------- + ----------- = ------------------------- = ------------------------
        2              2                  2                             2
@@ -339,5 +345,99 @@ p4 = 45 * 1/3 = 15
 (min p1 p2 p3 p4) = 3
 (max p1 p2 p3 p4) = 15
 [3, 15] -> 15 - 3 = 12 -> 12 / 2 = 6 != 15
+|#
+
+#|
+Exercise 2.10
+Ben Bitdiddle, an expert systems programmer, looks over Alyssa's shoulder and comments that it is not clear what it means to divide by an interval than spans zero.
+Modify Alyssa's code to check for this condition and to signal an error if it occurs.
+|#
+
+
+; Initially I thought "span 0" meant the width of the interval was 0 instead of negative/positive endpoint
+(define (div-interval x y)
+  (if (<= 0 (* (lower-bound y) (upper-bound y)))
+      (error "Interval spans zero")
+      (mul-interval x
+                    (make-interval (/ 1.0 (upper-bound y))
+                                   (/ 1.0 (lower-bound y))))))
+
+#|
+Exercise 2.11
+In passing, Ben also cryptically comments: "By testing the signs of the endpoints of the intervals, it is possible to break mul-interval into nine cases,
+only one of which requires more than two multiplications." Rewrite this procedure using Ben's suggestion.
+|#
+
+(define (mul-interval x y)
+  (define (pos? a)
+    (>= a 0))
+  (define (neg? a)
+    (< a 0))
+  (let ((a (lower-bound x))
+        (b (upper-bound x))
+        (c (lower-bound y))
+        (d (upper-bound y)))
+    (cond [(and (pos? a)
+                (pos? b)
+                (pos? c)
+                (pos? d))
+           (make-interval (* a c) (* b d))] 
+          [(and (pos? a)
+                (pos? b)
+                (neg? c)
+                (pos? d))
+           (make-interval (* b c) (* b d))] 
+          [(and (pos? a)
+                (pos? b)
+                (neg? c)
+                (neg? d))
+           (make-interval (* b c) (* a d))] 
+          [(and (neg? a)
+                (pos? b)
+                (pos? c)
+                (pos? d))
+           (make-interval (* a d) (* b d))] 
+          [(and (neg? a)
+                (pos? b)
+                (neg? c)
+                (pos? d))
+           (make-interval (min (* a d) (* b c)) (max (* a c) (* b d)))] ; -a b -c d *** Only case that requires 3 multiplications to see which value is the smallest between ad and bc and which value is greatest between ac and bd
+          [(and (neg? a)
+                (pos? b)
+                (neg? c)
+                (neg? d))
+           (make-interval (* b c) (* a c))] 
+          [(and (neg? a)
+                (neg? b)
+                (neg? c)
+                (neg? d))
+           (make-interval (* b d) (* a c))] 
+          [(and (neg? a)
+                (neg? b)
+                (neg? c)
+                (pos? d))
+           (make-interval (* a d) (* a c))]
+          [else
+           (make-interval (* a d) (* b c))])))
+
+#|
+Exercise 2.12
+Define a constructor make-center-percent that takes a center and a percentage tolerance and produces the desired interval. You must also define a selector percent
+that produces the percentage tolerance for a given interval. The center selector is the same as the one shown above
+|#
+
+(define (make-center-percent c t)
+  (let ((pct (abs (* c (/ t 100)))))
+    (make-center-width c pct)))
+
+(define (percent i)
+  (if (= (center i) 0)
+      0
+      (/ (width i) (center i))))
+
+#|
+Exercise 2.13
+Show that under the assumption of small percentage tolerance there is a simple formula for the approximate percentage tolerance of the product of two 
+intervals in terms of the tolerance of the factors. You may simplify the problem by assuming that all numbers are positive.
 |#
 
