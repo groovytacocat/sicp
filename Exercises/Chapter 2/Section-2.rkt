@@ -294,3 +294,52 @@ Give combinations of cars and cdrs that will pick 7 from each of the following l
 
 ; (1 (2 (3 (4 (5 (6 7))))))
 (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7))))))))))))))))))
+
+#|
+Exercise 2.26
+Suppose we define x and y to be two lists:
+
+(define x (list 1 2 3))
+(define y (list 4 5 6))
+
+What result is printed by the interpreter in response to evaluating each of the following expressions:
+
+(append x y)
+(cons x y)
+(list x y)
+
+|#
+
+; (append x y)
+; (1 2 3 4 5 6)
+
+; (cons x y)
+; ((1 2 3) 4 5 6)
+
+; (list x y)
+; ((1 2 3) (4 5 6))
+
+#|
+Exercise 2.27
+Modify the reverse procedure of Ex 2.18 to produce a deep-reverse procedure that takes a list as argument and returns as its value
+the list with its elements reversed and with all sublists deep-reversed as well
+
+For example:
+(define x (list (list 1 2) (list 3 4)))
+
+x
+((1 2) (3 4))
+
+(reverse x)
+((3 4) (1 2))
+
+(deep-reverse x)
+((4 3) (2 1))
+|#
+
+(define (deep-reverse items)
+  (define (d-rev l)
+    (if (not (pair? l))
+        l
+        (deep-reverse l)))
+  (reverse (map d-rev items)))
