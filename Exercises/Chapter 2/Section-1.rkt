@@ -441,3 +441,77 @@ Show that under the assumption of small percentage tolerance there is a simple f
 intervals in terms of the tolerance of the factors. You may simplify the problem by assuming that all numbers are positive.
 |#
 
+; This one was another math rigor struggle.
+; Initially had hypothetical intervals X = [a, b], Y = [c , d], and Z = [ac, bd]
+; Roadblock here to determine how to show that (b - a)/(b + a) + (d - c)/(d + c) = (bd - ac) / (bd + ac)
+; Looked online to find help and found the key (for me anyway) was to define the intervals in terms of Center and Width eg. X = [cX - wX, cX + wX], Y = [cY - wY, cY + wY]
+
+#|
+
+X * Y = [(cX - wX)(cY - wY), (cX + wX)(cY + wY)] = [cXcY - cXwY - cYwX + wXwY, cXcY + cXwY + cYwX + wXwY]
+
+Tolerance of XY = cXcY + cXwY + cYwX + wXwY - (cXcY - cXwY - cYwX + wXwY)     2 (cXwY + cYwX)      cXwY + cYwX
+                  ------------------------------------------------------ ===> --------------- ==>  -----------
+                   cXcY + cXwY + cYwX + wXwY + cXcY - cXwY - cYwX + wXwY      2 (cXcY + wXwY)         cXcY     (because the tolerances are small the product of them is negligible)
+
+The resulting value of (cXwY + cYwX) / cXcY when separated and cancelling out leads to wY/cY + wX/cX => tY + tX
+|#
+
+#|
+Exercise 2.14
+Demonstrate that Lem is right. Investigate the behavior of the system on a variety of arithmetic expressions. Make some intervals A and B, and use them
+in computing the expressions A/A and A/B. You will get the most insight by using intervals whose width is a small percentage of the center value.
+Examine the results of the computation in center-percent form (see Exercise 2.12)
+|#
+
+#|
+Let A = [a, b] and B = [c, d] **(Assuming all numbers are positive)**
+
+Method 1:
+A * B = [ac, bd]
+A + B = [a + c, b + d]
+
+AB / (A + B) = [ac, bd] * [1/(b + d), 1/(a + c)] => [ac/(b + d), bd/(a + c)]
+
+Method 2:
+1 / A = [1/b, 1/a]
+1 / B = [1/d, 1/c]
+
+1 / A + 1 / B = [1/b + 1/d, 1/a + 1/c] => [(d + b)/db, (a + c)/ac]
+
+1 / (1/A + 1/B) = [1, 1] * [(a + c)/ac, (b + d)/bd] = [ac/(a + c), bd/(b + d)]
+|#
+
+; Numerical Examples A = [4, 8] B = [6, 12]
+; (par1 A B) -> (mcons 1.2000000000000002 9.600000000000001)
+; (par2 A B) -> (mcons 2.4000000000000004 4.800000000000001)
+
+#|
+Exercise 2.15
+Eva Lu Ator, another user, has also noticed the different intervals computed by differenty but algebraically equivalent expressions. She says that a formula to compute
+with intervals using Alyssa's system will produce tighter error bounds if it can be written in such a form that no variable that represents an uncertain number is repeated.
+Thus, she says, par2 is a "better" program for resistances than par1. Is she right? Why?
+|#
+
+#|
+When dividing an interval A by itself the resultant interval is not 1 (or [1, 1] which I assume would be the 'identity' interval)
+rather the result of A/A is [a/b, b/a] which is a range of possible uncertain numbers. (i.e. for some x in A, there is no guarantee that the x_1 in A is equal to x_2 in A for the division A/A)
+
+In par1 the procedure will inherently perform division of an interval by itself, whereas par2 will only not divide an interval by itself at any point
+
+The program is "better" in that the error bounds are smaller however the interval arithmetic system should produce the same result for both operations
+|#
+
+#|
+Exercise 2.16
+Explain, in general, why equivalent algebraic expressions may lead to different answers. Can you devise an interval-arithmetic package that does not have this shortcoming, 
+or is this task impossible? (Warning: This problem is very difficult)
+|#
+
+#|
+The algebraic expressions lead to different answers as it is difficult/impossible to know that the value of an interval is the same as another interval even if the intervals are equal
+This issue is seen in the lack of identity for division as well as no inverse for addition/subtraction
+e.g. A + C - C != A 
+
+This lack of identity/the uncertainty of the nature of intervals leads me to assume that it is not possible to devise the package desired
+|#
