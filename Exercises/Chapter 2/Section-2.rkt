@@ -343,3 +343,151 @@ x
         l
         (deep-reverse l)))
   (reverse (map d-rev items)))
+
+#|
+Exercise 2.28
+Write a procedure fringe that takes as argument a tree (represented as a list) and returns a list, whose elements are all the leaves
+of the tree arranged in left-to-right order
+
+For Example:
+(define x (list (list 1 2) (list 3 4)))
+
+(fringe x)
+(1 2 3 4)
+
+(fringe (list x x))
+(1 2 3 4 1 2 3 4)
+|#
+
+#|
+This took me longer than I'd like to admit. I could see that it would be In-Order Tree Traversal, and I knew that would involve
+Recursive calls all the way "left" then "right"
+My initial attempts were relatively similar to the final output however, I originally was using cons and not append which ran into issues
+of adding extraneous nils throughtout due to (1 2) actually being (cons 1 (cons 2 nil)) as well as issues with moving back up the tree to cons
+the left subtree with the right leading ((1 2) (3 4)) to becoming ((1 2 '()) (3 4 '())) --> ((1 2) (3 4))
+
+Before this I had one other working version that worked but was ugly/convoluted to handle the (1 2) -> 1 and (2) where I would append based on the cddr
+|#
+
+(define (fringe tree)
+  (cond [(null? tree) nil]
+        [(not (pair? tree)) (list tree)]
+        [else (append (fringe (car tree)) (fringe (cdr tree)))]))
+
+#|
+Exercise 2.29
+A binary mobile consists of two branches, a left branch and a right branch. Each branch is a rod of a certain length, from which hangs either a weight
+or another binary mobile. We can represent a binary mobile using compound data by constructing it from two branches (for example, using list):
+
+(define (make-mobile left right)
+  (list left right))
+
+A branch is constructed from a length (which must be a number) together with a structure, which may be either a number (representing a simple weight) or another mobile:
+(define (make-branch length structure)
+  (list length structure))
+
+a. Write the corresponding selectors left-branch right-branch, which return the branches of a mobile, and branch-length and branch-structure which return the components of a branch
+
+b. Using your selectors, define a procedure total-weight that returns the total weight of a mobile.
+
+c. A mobile is said to be balanced if the torque applied by its top-left branch is equal to that applied by its top-right branch (that is, if the length of the left rod multiplied by
+the weight hanging from that rod is equal to the corresponding product for the right side) and if each of the submobiles hanging off its branches is balanced. 
+Design a predicate that tests whether a binary mobile is balanced.
+
+d. Suppose we change the representation of mobiles so that the constructors are 
+
+(define (make-mobile left right)
+  (cons left right))
+
+(define (make-branch length structure)
+  (cons length structure))
+
+How much do you need to change your programs to convert the new representation
+|#
+
+; a 
+(define (left-branch mobile) (car mobile))
+(define (right-branch mobile) (car (cdr mobile)))
+
+(define (branch-length branch) (car branch))
+(define (branch-structure branch) (car (cdr branch)))
+
+; b
+(define (total-weight mobile)
+  (cond [(null? mobile) 0]
+        [(not (pair? mobile)) mobile]
+        [else
+         (+ (total-weight (branch-structure (left-branch mobile)))
+            (total-weight (branch-structure (right-branch mobile))))]))
+
+; c
+; My initial solution for this was basically the same but uglier due to a cond predicate that then had 2 if statements inside it 
+; as I struggled with figuring out how to use the and conditional to make recursive calls when the left/right branches were not mobiles themselves
+; after looking at solutions online to compare I saw 
+(define (balanced? mobile)
+  (define (torque branch)
+    (* (branch-length branch) (total-weight (branch-structure branch))))
+  (if (not (pair? mobile))
+      #t
+      (and (= (torque (left-branch mobile))
+              (torque (right-branch mobile)))
+           (balanced? (branch-structure (left-branch mobile)))
+           (balanced? (branch-structure (right-branch mobile))))))
+
+; d
+; The only changes necessary for the programs to convert the new representation, is to alter the right-branch and right-structure selectors
+; changing (car (cdr <obj>)) to (cdr <obj>)
+
+#|
+Exercise 2.30
+Define a procedure square-tree analogous to the square-list procedure of Ex 2.21. That is, square-tree should behave as follows:
+
+(square-tree
+  (list 1
+        (list 2 (list 3 4) 5)
+        (list 6 7)))
+
+(1 (4 (9 16) 25) (36 49))
+|#
+
+(define (square-tree tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (square-tree sub-tree)
+             (square sub-tree)))
+       tree))
+
+#|
+Exercise 2.31 
+Abstract your answer to exercise 2.30 to produce a procedure tree-map with the property that square-tree could be defined as
+
+(define (square-tree tree) (tree-map square tree))
+|#
+
+; Something feels wrong about using map, to implement tree-map but also look almost the same with 
+(define (tree-map proc tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (tree-map proc sub-tree)
+             (proc sub-tree)))
+       tree))
+
+; Non-map version
+(define (map-tree proc tree)
+  (cond [(null? tree) nil]
+        [(pair? tree)
+         (cons (map-tree proc (car tree)) (map-tree proc (cdr tree)))]
+        [else (proc tree)]))
+
+#|
+Exercise 2.32
+We can represent a set as a list of distinct elements, and we can represent the set of all subsets of the set as a list of lists. For example,
+if the set is (1 2 3), then the set of all subsets is (() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3)). 
+Complete the following definition of a procedure that generates the set of subsets of a set and give a clear explanation of why it works
+|#
+
+(define (subsets s)
+  (if (null? s)
+      (list nil)
+      (let ((rest (subsets (cdr s))))
+        (append rest (map (lambda (x) (cons (car s) x)) rest)))))
