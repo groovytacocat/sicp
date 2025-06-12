@@ -14,34 +14,36 @@
          (square (fast-expt b (/ n 2)))]
         [else
          (* b (fast-expt b (- n 1)))]))
-(define (sum term a next b)
-  (if (> a b)
-      0
-      (+ (term a)
-         (sum term (next a) next b))))
-(define (gcd a b)
-  (if (= b 0)
-      a
-      (gcd b (remainder a b))))
-(define (smallest-divisor n)
-  (define (find-divisor n test-divisor)
-    (define (next num)
-      (if (= num 2)
-          3
-          (+ num 2)))
-    (cond [(> (square test-divisor) n) n]
-          [(divides? test-divisor n) test-divisor]
-          [else (find-divisor n (next test-divisor))]))
-  (find-divisor n 2))
 (define (divides? a b)
   (= (remainder b a) 0))
-(define (prime? n)
-  (= n (smallest-divisor n)))
-(define tolerance 0.00001)
-(define (average-damp f)
-  (lambda (x) (average x (f x))))
+(define (filter predicate sequence)
+  (cond [(null? sequence) nil]
+        [(predicate (car sequence))
+         (cons (car sequence)
+               (filter predicate (cdr sequence)))]
+        [else (filter predicate (cdr sequence))]))
 
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
 
+(define (enumerate-tree tree)
+  (cond [(null? tree) nil]
+        [(not (pair? tree)) (list tree)]
+        [else (append (enumerate-tree (car tree))
+                      (enumerate-tree (cdr tree)))]))
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+(define fold-right accumulate)
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
 #|
 Exercise 2.17
 Define a procedure last-pair that returns the list that contains only the last element of a given (nonempty) list:
@@ -256,13 +258,13 @@ Box-and-pointer
  1           [*][*] ---> [*][/]
               |           |
               V           V
-              2          [*][*] --> [*][/] 
+              2          [*][*] --> [*][/]
                           |          |
                           V          V
                           3          4
 |#
 
- 
+
 #|
 Tree
             (list 1 (list 2 (list 3 4)))
@@ -391,10 +393,10 @@ a. Write the corresponding selectors left-branch right-branch, which return the 
 b. Using your selectors, define a procedure total-weight that returns the total weight of a mobile.
 
 c. A mobile is said to be balanced if the torque applied by its top-left branch is equal to that applied by its top-right branch (that is, if the length of the left rod multiplied by
-the weight hanging from that rod is equal to the corresponding product for the right side) and if each of the submobiles hanging off its branches is balanced. 
+the weight hanging from that rod is equal to the corresponding product for the right side) and if each of the submobiles hanging off its branches is balanced.
 Design a predicate that tests whether a binary mobile is balanced.
 
-d. Suppose we change the representation of mobiles so that the constructors are 
+d. Suppose we change the representation of mobiles so that the constructors are
 
 (define (make-mobile left right)
   (cons left right))
@@ -405,7 +407,7 @@ d. Suppose we change the representation of mobiles so that the constructors are
 How much do you need to change your programs to convert the new representation
 |#
 
-; a 
+; a
 (define (left-branch mobile) (car mobile))
 (define (right-branch mobile) (car (cdr mobile)))
 
@@ -421,9 +423,9 @@ How much do you need to change your programs to convert the new representation
             (total-weight (branch-structure (right-branch mobile))))]))
 
 ; c
-; My initial solution for this was basically the same but uglier due to a cond predicate that then had 2 if statements inside it 
+; My initial solution for this was basically the same but uglier due to a cond predicate that then had 2 if statements inside it
 ; as I struggled with figuring out how to use the and conditional to make recursive calls when the left/right branches were not mobiles themselves
-; after looking at solutions online to compare I saw 
+; after looking at solutions online to compare I saw
 (define (balanced? mobile)
   (define (torque branch)
     (* (branch-length branch) (total-weight (branch-structure branch))))
@@ -458,13 +460,13 @@ Define a procedure square-tree analogous to the square-list procedure of Ex 2.21
        tree))
 
 #|
-Exercise 2.31 
+Exercise 2.31
 Abstract your answer to exercise 2.30 to produce a procedure tree-map with the property that square-tree could be defined as
 
 (define (square-tree tree) (tree-map square tree))
 |#
 
-; Something feels wrong about using map, to implement tree-map but also look almost the same with 
+; Something feels wrong about using map, to implement tree-map but also look almost the same with
 (define (tree-map proc tree)
   (map (lambda (sub-tree)
          (if (pair? sub-tree)
@@ -482,12 +484,213 @@ Abstract your answer to exercise 2.30 to produce a procedure tree-map with the p
 #|
 Exercise 2.32
 We can represent a set as a list of distinct elements, and we can represent the set of all subsets of the set as a list of lists. For example,
-if the set is (1 2 3), then the set of all subsets is (() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3)). 
+if the set is (1 2 3), then the set of all subsets is (() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3)).
 Complete the following definition of a procedure that generates the set of subsets of a set and give a clear explanation of why it works
 |#
+
+; This one came to me in a surprise as I was trying to figure out how to avoid some common issues I've faced when performing recursive operations
+; in conjunction with list structures/creating lists (e.g. too many nils/only nils/etc)
 
 (define (subsets s)
   (if (null? s)
       (list nil)
       (let ((rest (subsets (cdr s))))
         (append rest (map (lambda (x) (cons (car s) x)) rest)))))
+
+; This works by appending the list generated by map where the car of the set is paired with each element of the cdr.
+; This in combination with the recursive calls to the cdr of the set will essentially recurse down and then build the list
+; from the bottom up creating subsets from each element
+
+#|
+Exercise 2.33
+Fill in the missing expressions to copmlete the following definitions of some basic list-manipulation operations as accumulations:
+
+(define (map p sequence)
+  (accumulate (lambda (x y) <??>) nil sequence))
+
+(define (append seq1 seq2)
+  (accumulate cons <??> <??>))
+
+(define (length sequence)
+  (accumulate <??> 0 sequence))
+|#
+
+; Map
+(define (map p sequence)
+  (accumulate (lambda (x y) (cons (p x) y)) nil sequence))
+
+; Append
+(define (append seq1 seq2)
+  (accumulate cons seq2 seq1))
+
+; Length
+(define (length sequence)
+  (accumulate (lambda (x y) (+ 1 y)) 0 sequence))
+
+#|
+Exercise 2.34
+Evaluating a polynomial in x at a given value of x can be formulated as an accumulation. We evaluate the polynomial
+
+a_n x^n + a_n-1 x^n-1 + .. + a_1 x + a_0
+
+using a well-known algorithm Horner's rule which structures computations as
+
+(... (a_n x + a_n-1)x + ... + a_1)x + a_0
+
+In other words we start with a_n, multiply by x, add a_n-1, multiply by x, and so on, until we reach a_0.
+
+Fill in the following template to produce a procedure that evalutes a polynomial using Horner's rule.
+Assume that the coefficients of the polynomial are arranged in a sequence, from a_0 through a_n.
+
+(define (horner-eval x coefficient-sequence)
+  (accumulate (lambda (this-coeff higher-terms) <??>)
+              0
+              coefficient-sequence))
+
+For example: to compute 1 + 3x + 5x^3 + x^5 at x = 2 you would evaluate
+(horner-eval 2 (list 1 3 0 5 0 1))
+
+|#
+
+(define (horner-eval x coefficient-sequence)
+  (accumulate (lambda (this-coeff higher-terms)
+                (+ (* x higher-terms)
+                   this-coeff))
+              0
+              coefficient-sequence))
+
+#|
+Exercise 2.35
+Redefine count-leaves from section 2.2.2 as an accumulation
+
+(define (count-leaves t)
+  (accumulate <??> <??> (map <??> <??>)))
+|#
+
+
+; This took me a minute to figure out a procedure that could be applied by map to 'flatten' a tree
+; I ended up with 2 lambdas that were kinda ugly, before looking back in the book/at notes to see if I was missing something
+; and then remembering we had already written a procedure to enumerate a tree and combined with the identity function in map
+; would flatten the tree as I wanted.
+(define (count-leaves tree)
+  (accumulate (lambda (x y) (+ 1 y))
+              0
+              (map (lambda (x) x) (enumerate-tree tree))))
+
+#|
+Exercise 2.36
+The procedure accumulate-n is similar to accumulate except that it takes as its third argument a sequence of sequences, which are all assumed
+to have the same number of elements. It applies the designated accumulation procedure to combine all the first elements of the sequence,
+all the second elements of the sequences, and so on, and returns a sequence of the results. For instance, if s is a sequence containing four
+sequences ((1 2 3) (4 5 6) (7 8 9) (10 11 12)), then the value of (accumulate-n + 0 s) should be the sequence (22 26 30).
+
+Fill in the missing expressions in the following definitions of accumulate-n:
+
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+             nil
+             (cons (accumulate op init <??>)
+                   (accumulate-n op init <??>))))
+|#
+
+#|
+This has been the exercise that has taken me the longest so far. Embarrassingly so, because first I had a typo in my problem description
+where I had cons and 2 accumulates instead of accumulate and accumulate-n
+
+I could see that I would need to car each subsequence and apply the accumulate procedure to that list, and that I would need to do that 
+with successive cdr calls (i.e. (car s), (car (cdr s)), (car (cdr (cdr s)))) etc. 
+
+I could not however see how to map the sequence to both eventually have the car be null to terminate, as well as apply the cdr procedure as many times as necessary
+
+I looked up the exercise for some assistance and found someone providing some insight of "define a proc to get the first item from each nested sequence and another that returns the remaining parts" (shoutouts to jz of SchemeWiki)
+then it clicked that I just needed to map cdr to each subsequence. (also I originally had (lambda (x) (car x)))/(lambda (x) (cdr x)) for my map procs before realizing that's just car/cdr 
+|#
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+             nil
+             (cons (accumulate op init (map car seqs))
+                   (accumulate-n op init (map cdr seqs)))))
+
+#|
+Exercise 2.37
+Suppose we represent vectors v = (v_i) as a sequence of numbers, and matrices m = (m_ij) as sequences of vectors (the rows of the matrix). For example the matrix
+
+1 2 3 4
+4 5 6 6
+6 7 8 9
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+(define (transpose mat)
+  (accumulate-n <??> <??> mat))
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map <??> m)))
+|#
+
+; matrix-*-vector
+(define (matrix-*-vector m v)
+  (map (lambda (x) (dot-product v x)) m))
+
+; transpose
+(define (transpose mat)
+  (accumulate-n cons nil mat))
+
+; matrix-*-matrix --- This one took a minute for such a frustrating silly reason. I originally had (lambda (x) (matrix-*-vector x cols)) vs (... cols x), then had a janky nested lambda+map combo for dot products
+; then trying to clean/optimize that because it was ugly/too complex for what I assumed the answer should be
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (x) (matrix-*-vector cols x)) m)))
+
+#|
+Exercise 2.38
+The accumualte procedure is also known as fold-right, because it combines the first element of the sequence with the result of combining all the elements to the right.
+There is also a fold-left, which is similar to fold-right, except that it combines elements working in the opposite direction:
+
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+What are the values of: 
+
+(fold-right / 1 (list 1 2 3))
+(fold-left / 1 (list 1 2 3))
+(fold-right list nil (list 1 2 3))
+(fold-left list nil (list 1 2 3))
+
+Give a property that op should satisfy to guarantee that fold-right and fold-left will produce the same values for any sequence.
+|#
+
+; / 1 (list 1 2 3)
+; f-r -> 3 / 2 --> (/ 3 (/ 2 (/ 1 init)))
+; f-l -> 1 / 6 --> (/ (/ (/ init 1) 2) 3)
+
+; list nil (list 1 2 3)
+; f-r -> (1 (2 (3 ()))) --> (list 1 (list 2 (list 3 init)))
+; f-l -> (((() 1) 2) 3) --> (list (list (list init 1) 2) 3)
+
+; For the property had to look some stuff up for guidance.
+; Op should only need to satisfy Associativity, this can be seen from using Matrix Multiplication which is associative but not commutative
+; e.g. (fold-right matrix-*-matrix i (list A B C)) = (fold-left matrix-*-matrix i (list A B C)) where i is the identity matrix,
+; and A B C are matrices that can be multiplied -> (A x B) x C = A x (B x C)
+
+#|
+Exercise 2.39
+Complete the following definitions of reverse in terms of fold-right and fold-left
+
+(define (reverse sequence)
+  (fold-right (lambda (x y) <??>) nil sequence))
+
+(define (reverse sequence)
+  (fold-left (lambda (x y) <??>) nil sequence))
+|#
+
+(define (right-reverse sequence)
+  (fold-right (lambda (x y) (append y (list x))) nil sequence))
+
+(define (left-reverse sequence)
+  (fold-left (lambda (x y) (cons y x)) nil sequence))
