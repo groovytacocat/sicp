@@ -44,6 +44,13 @@
         (iter (op result (car rest))
               (cdr rest))))
   (iter initial sequence))
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+(define (enumerate-interval low high)
+  (if (> low high)
+      nil
+      (cons low (enumerate-interval (+ low 1) high))))
+
 #|
 Exercise 2.17
 Define a procedure last-pair that returns the list that contains only the last element of a given (nonempty) list:
@@ -694,3 +701,28 @@ Complete the following definitions of reverse in terms of fold-right and fold-le
 
 (define (left-reverse sequence)
   (fold-left (lambda (x y) (cons y x)) nil sequence))
+
+#|
+Exercise 2.40
+Define a procedure unique-pairs that, given an integer n, generates the sequence of pairs (i, j) with
+1 <= j < i <= n. Use unique-pairs to simplify the definition of prime-sum-pairs given above
+|#
+
+; Was initially confused as I thought there had to be more to this/this was harder than it was actually 
+(define (unique-pairs n)
+  (flatmap (lambda (i)
+             (map (lambda (j) (list i j))
+                  (enumerate-interval 1 (- i 1))))
+             (enumerate-interval 1 n)))
+
+#|
+Exercise 2.41
+Write a procedure to find all ordered triples of distinct positive integers i, j, and k less than or equal to
+a given integer n that sum to a given integer s.
+|#
+
+(define (ordered-triples n s)
+  )
+
+(define ()
+  )
