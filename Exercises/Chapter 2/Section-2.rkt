@@ -788,20 +788,13 @@ with respect to the others. (note that we need only check whether the new queen 
       #t
       (and (not (diag pos))
            (rows pos))))
-(define (rows pos)
-    (define (dupe-check n seq)
-      (if (= (- (length seq) 1) (length (remove n seq)))
-          #t
-          #f))
-    (unique-map (lambda (value)
-           (dupe-check value pos))
-         pos))
-(define (unique-map proc sequence)
-  (if (null? sequence)
-      #t
-      (if (proc (car sequence))
-          (unique-map proc (cdr sequence))
-          #f)))
+
+(define (rows sequence)
+    (define (iter cur res)
+    (if (>= cur (length sequence))
+        res
+        (iter (+ cur 1) (and res (= (- (length sequence) 1) (length (remove (list-ref sequence cur) sequence)))))))
+  (iter 0 #t))
 
 (define (queens board-size)
   (define (queen-cols k)
