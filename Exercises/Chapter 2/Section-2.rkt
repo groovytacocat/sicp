@@ -50,6 +50,10 @@
   (if (> low high)
       nil
       (cons low (enumerate-interval (+ low 1) high))))
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+          sequence))
+
 
 #|
 Exercise 2.17
@@ -760,24 +764,44 @@ and empty-board, which represents an empty set of positions. You must also write
 with respect to the others. (note that we need only check whether the new queen is safe -- the other queens are already guaranteed safe with respect to each other)
 |#
 
-; representation for sets of board positions
-; (list x y z ...) x = row pos of queen in col 1, y = row pos of queen in col 2, z = row pos of queen in col 3, etc ...
-
-; rest-of-queens is a way to place k-1 queens in the first k-1 columns
-; Sequence of positions (list of lists)
-
-; new-row is a proposed row in which to place the queen for the kth column
-
 ; adjoin-position, which adjoins a new row-column position to a set of positions,
-(define (adjoin-position new-position queen rest)
-  nil)
+(define (adjoin-position new-row k rest-of-queens)
+  (append rest-of-queens (list new-row)))
 
 ; empty-board, which represents an empty set of positions
 (define empty-board nil)
 
-; safe?, which determines for a set of positions, whether the queen in the kth column is safe with respect to the others. (note that we need only check whether the new queen is safe -- the other queens are already guaranteed safe with respect to each other)
-(define (safe? queen positions)
-  nil)
+; safe?, which determines for a set of positions, 
+; whether the queen in the kth column is safe with respect to the others. 
+; ****(note that we need only check whether the new queen is safe - the other queens are already guaranteed safe with respect to each other)****
+(define (diag sequence)
+    (let ((edge (last-two sequence)))
+      (= 1 (abs (- (car edge) (cadr edge))))))
+
+(define (last-two sequence)
+    (if (= (length sequence) 2)
+        sequence
+        (last-two (cdr sequence))))
+
+(define (safe? queen pos)
+  (if (= (length pos) 1)
+      #t
+      (and (not (diag pos))
+           (rows pos))))
+(define (rows pos)
+    (define (dupe-check n seq)
+      (if (= (- (length seq) 1) (length (remove n seq)))
+          #t
+          #f))
+    (unique-map (lambda (value)
+           (dupe-check value pos))
+         pos))
+(define (unique-map proc sequence)
+  (if (null? sequence)
+      #t
+      (if (proc (car sequence))
+          (unique-map proc (cdr sequence))
+          #f)))
 
 (define (queens board-size)
   (define (queen-cols k)
@@ -791,3 +815,4 @@ with respect to the others. (note that we need only check whether the new queen 
                  (enumerate-interval 1 board-size)))
           (queen-cols (- k 1))))))
   (queen-cols board-size))
+
