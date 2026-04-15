@@ -775,18 +775,21 @@ with respect to the others. (note that we need only check whether the new queen 
 ; whether the queen in the kth column is safe with respect to the others. 
 ; ****(note that we need only check whether the new queen is safe - the other queens are already guaranteed safe with respect to each other)****
 (define (diag sequence)
-    (let ((edge (last-two sequence)))
-      (= 1 (abs (- (car edge) (cadr edge))))))
-
-(define (last-two sequence)
-    (if (= (length sequence) 2)
-        sequence
-        (last-two (cdr sequence))))
+  (let ((queen_row (- (length sequence) 1))
+        (queen_col (list-ref sequence (- (length sequence) 1))))
+    (define (inner-diag row seq)
+      (cond [(= (length seq) 1) #t]
+            [(= (abs (- row queen_row))
+               (abs (- (car seq) queen_col)))
+               #f]
+            [else
+              (inner-diag (+ row 1) (cdr seq))]))
+    (inner-diag 0 sequence)))
 
 (define (safe? queen pos)
   (if (= (length pos) 1)
       #t
-      (and (not (diag pos))
+      (and (diag pos)
            (rows pos))))
 
 (define (rows sequence)
@@ -809,3 +812,15 @@ with respect to the others. (note that we need only check whether the new queen 
           (queen-cols (- k 1))))))
   (queen-cols board-size))
 
+(define (queens-check n)
+  (cond [(> n 0)
+          (display "(queens ")
+          (display n)
+          (display ") has: ")
+          (display (length (queens n)))
+          (display " solutions")
+          (newline)
+          (queens-check (- n 1))]
+        [else
+          (display "Done")
+          (newline)]))
